@@ -363,7 +363,41 @@ function renderSolicConfirmadas(){
 }async function confirmarSolicitacao(id){const s=(S.solicitacoes||[]).find(x=>x.id===id);if(!s)return;const c=S.clientes.find(x=>x.id===s.clienteId);if(!c){toast('CLIENTE NÃO ENCONTRADO');return}pedDados={cid:c.id,itens:s.itens.map(i=>({...i,preco:i.preco||0})),obs:'SOLICITAÇÃO DO CATÁLOGO'};const salvo=await salvarRegistro('solicitacoes',{...s,status:'confirmada'});if(!salvo)return;abrir('mPedido');$('mpTitulo').textContent='CONFIRMAR SOLICITAÇÃO';preencherCliente(c.id);$('pedItens').innerHTML='';s.itens.forEach(i=>addItemRow(i.qtd,i.descricao,i.unidade,i.preco));calcTotal()}
 async function excluirSolicitacao(id){if(!confirm('EXCLUIR ESTA SOLICITAÇÃO?'))return;const ok=await excluirRegistro('solicitacoes',id);if(!ok)return;renderSolicitacoes();toast('SOLICITAÇÃO EXCLUÍDA')}
 function produtosFiltrados(){const b=buscaProd.trim().toLowerCase();return S.produtos.filter(p=>!b||(p.nome||'').toLowerCase().includes(b)).sort((a,b)=>a.nome.localeCompare(b.nome))}
-function renderProdutos(manterFoco){const inA=$('prodBuscaInput');const foco=manterFoco&&inA&&document.activeElement===inA;const cur=inA?inA.selectionStart:0;const lista=produtosFiltrados();const totalPag=Math.max(1,Math.ceil(lista.length/porPagProd));if(pagProd>totalPag)pagProd=totalPag;const ini=(pagProd-1)*porPagProd,fim=Math.min(ini+porPagProd,lista.length),pagina=lista.slice(ini,fim);let h=`<div class="toolbar"><button class="btn btn-cor" style="flex:0" onclick="novoProduto()">➕ CADASTRAR PRODUTO</button><div class="busca-disc"><span class="bic">🔍</span><input type="text" id="prodBuscaInput" placeholder="BUSCAR PRODUTO..." value="${buscaProd}" oninput="buscaProd=this.value;pagProd=1;renderProdutos(true)"></div></div>`;if(!lista.length){h+=`<div class="vazio">NENHUM PRODUTO CADASTRADO. TOQUE EM + CADASTRAR PRODUTO.</div>`;$('view-produtos').innerHTML=h;return}h+=`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>PRODUTO</th><th>FORMAS DE VENDA</th><th style="text-align:right">AÇÕES</th></tr></thead><tbody>`;pagina.forEach(p=>{let precos=`<span class="badge b-admin">${unLabel(p.un1)} • ${din(p.preco1)}</span>`;if(p.un2)precos+=` <span class="badge b-atendente">${unLabel(p.un2)} • ${din(p.preco2)}</span>`;if(p.un3)precos+=` <span class="badge b-entregue">${unLabel(p.un3)} • ${din(p.preco3)}</span>`;if(p.conv)precos+=` <span class="pchip" style="background:var(--badgeAmarelo);color:var(--amarelo)">${p.conv}</span>`;h+=`<tr><td style="font-weight:700">${p.emoji||'📦'} ${p.nome}</td><td>${precos}</td><td><span class="acoes-td" style="justify-content:flex-end"><button class="btn-ic ed" onclick="editarProduto('${p.id}')">✏️</button><button class="btn-ic ex" onclick="excluirProduto('${p.id}')">🗑️</button></span></td></tr>`});h+=`</tbody></table></div><div class="pag-bar"><span class="info">MOSTRANDO ${ini+1}–${fim} DE ${lista.length} • PÁGINA ${pagProd}/${totalPag}</span><span><button class="pag-btn" ${pagProd<=1?'disabled':''} onclick="pagProd--;renderProdutos()">‹ ANTERIOR</button> <button class="pag-btn" ${pagProd>=totalPag?'disabled':''} onclick="pagProd++;renderProdutos()">PRÓXIMA ›</button></span></div>`;$('view-produtos').innerHTML=h;if(foco){const n=$('prodBuscaInput');if(n){n.focus();try{n.setSelectionRange(cur,cur)}catch(e){}}}}
+function renderProdutos(){
+  var view=$('view-produtos');
+  if(!view)return;
+  if(!$('prodBuscaInput')){
+    var h='<div class="toolbar"><button class="btn btn-cor" style="flex:0" onclick="novoProduto()">➕ CADASTRAR PRODUTO</button><div class="busca-disc"><span class="bic">🔍</span><input type="text" id="prodBuscaInput" placeholder="BUSCAR PRODUTO..." value="'+(buscaProd||'')+'" oninput="buscaProd=this.value;pagProd=1;renderProdLista()"></div></div>';
+    h+='<div id="prodLista"></div>';
+    view.innerHTML=h;
+  }
+  renderProdLista();
+}
+
+function renderProdLista(){
+  var box=$('prodLista');
+  if(!box)return;
+  var lista=produtosFiltrados();
+  var totalPag=Math.max(1,Math.ceil(lista.length/porPagProd));
+  if(pagProd>totalPag)pagProd=totalPag;
+  var ini=(pagProd-1)*porPagProd,fim=Math.min(ini+porPagProd,lista.length),pagina=lista.slice(ini,fim);
+  var h='';
+  if(!lista.length){
+    box.innerHTML='<div class="vazio">NENHUM PRODUTO CADASTRADO. TOQUE EM + CADASTRAR PRODUTO.</div>';
+    return;
+  }
+  h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>PRODUTO</th><th>FORMAS DE VENDA</th><th style="text-align:right">AÇÕES</th></tr></thead><tbody>';
+  pagina.forEach(function(p){
+    var precos='<span class="badge b-admin">'+unLabel(p.un1)+' • '+din(p.preco1)+'</span>';
+    if(p.un2)precos+=' <span class="badge b-atendente">'+unLabel(p.un2)+' • '+din(p.preco2)+'</span>';
+    if(p.un3)precos+=' <span class="badge b-entregue">'+unLabel(p.un3)+' • '+din(p.preco3)+'</span>';
+    if(p.conv)precos+=' <span class="pchip" style="background:var(--badgeAmarelo);color:var(--amarelo)">'+p.conv+'</span>';
+    h+='<tr><td style="font-weight:700">'+(p.emoji||'📦')+' '+p.nome+'</td><td>'+precos+'</td><td><span class="acoes-td" style="justify-content:flex-end"><button class="btn-ic ed" onclick="editarProduto(\''+p.id+'\')">✏️</button><button class="btn-ic ex" onclick="excluirProduto(\''+p.id+'\')">🗑️</button></span></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="pag-bar"><span class="info">MOSTRANDO '+(ini+1)+'–'+fim+' DE '+lista.length+' • PÁGINA '+pagProd+'/'+totalPag+'</span><span><button class="pag-btn" '+(pagProd<=1?'disabled':'')+' onclick="pagProd--;renderProdLista()">‹ ANTERIOR</button> <button class="pag-btn" '+(pagProd>=totalPag?'disabled':'')+' onclick="pagProd++;renderProdLista()">PRÓXIMA ›</button></span></div>';
+  box.innerHTML=h;
+}
 function novoProduto(){produtoEditId=null;$('mpTitulo').textContent='NOVO PRODUTO';$('pNome').value='';$('pEmoji').value='';$('pFoto').value='';$('pUn1').value='un';$('pPreco1').value='';$('pUn2').value='';$('pPreco2').value='';$('pUn3').value='';$('pPreco3').value='';$('pConv').value='';abrir('mProduto')}
 function editarProduto(id){const p=produto(id);if(!p)return;produtoEditId=id;$('mpTitulo').textContent='EDITAR PRODUTO';$('pNome').value=p.nome;$('pEmoji').value=p.emoji||'';$('pFoto').value=p.foto||'';$('pUn1').value=p.un1||'un';$('pPreco1').value=moedaInput(p.preco1);$('pUn2').value=p.un2||'';$('pPreco2').value=p.preco2?moedaInput(p.preco2):'';$('pUn3').value=p.un3||'';$('pPreco3').value=p.preco3?moedaInput(p.preco3):'';$('pConv').value=p.conv||'';abrir('mProduto')}
 async function salvarProduto(){const nome=$('pNome').value.trim();if(!nome){toast('INFORME O NOME DO PRODUTO');return}const d={nome,emoji:$('pEmoji').value.trim(),foto:$('pFoto').value.trim(),un1:$('pUn1').value||'un',preco1:valorMascara($('pPreco1').value),un2:$('pUn2').value||'',preco2:valorMascara($('pPreco2').value),un3:$('pUn3').value||'',preco3:valorMascara($('pPreco3').value),conv:$('pConv').value.trim()};let record;if(produtoEditId){const p=produto(produtoEditId);record={...p,...d}}else{if(S.produtos.some(x=>norm(x.nome)===norm(nome))){toast('JÁ EXISTE UM PRODUTO COM ESSE NOME');return}record={id:uid(),...d}}const salvo=await salvarRegistro('produtos',record);if(!salvo)return;fechar('mProduto');renderAll();toast('PRODUTO SALVO ✅')}
@@ -382,7 +416,65 @@ function toggleSelCli(id,on){if(on)selCli.add(id);else selCli.delete(id);renderC
 function selCliPage(on){clientesFiltrados().slice((pagCli-1)*porPagCli,(pagCli-1)*porPagCli+porPagCli).forEach(c=>{if(on)selCli.add(c.id);else selCli.delete(c.id)});renderClientes()}
 async function toggleClienteStatus(id){const c=cliente(id);if(!c)return;const record={...c,ativo:c.ativo===false?true:false};const salvo=await salvarRegistro('clientes',record);if(!salvo)return;renderClientes();toast(salvo.ativo?'CLIENTE ATIVADO ✅':'CLIENTE DESATIVADO')}
 function excluirSelecionadosClientes(){if(!selCli.size)return;soMaster(async()=>{if(!confirm('EXCLUIR '+selCli.size+' CLIENTE(S) E TODOS OS PEDIDOS DELES?'))return;if(!confirm('TEM CERTEZA? ISSO NÃO PODE SER DESFEITO.'))return;const ops=[];S.pedidos.filter(p=>selCli.has(p.clienteId)).forEach(p=>ops.push({collection:'pedidos',id:p.id}));selCli.forEach(id=>ops.push({collection:'clientes',id}));const ok=await excluirRegistros(ops);if(!ok)return;selCli.clear();renderAll();toast('CLIENTES EXCLUÍDOS')})}
-function renderClientes(manterFoco){const inA=$('cliBuscaInput');const foco=manterFoco&&inA&&document.activeElement===inA;const cur=inA?inA.selectionStart:0;const lista=clientesFiltrados();const totalPag=Math.max(1,Math.ceil(lista.length/porPagCli));if(pagCli>totalPag)pagCli=totalPag;const ini=(pagCli-1)*porPagCli,fim=Math.min(ini+porPagCli,lista.length),pagina=lista.slice(ini,fim);const selPag=pagina.length>0&&pagina.every(c=>selCli.has(c.id));let h=`<div class="toolbar"><button class="btn btn-cor" style="flex:0" onclick="novoCliente()">➕ NOVO CLIENTE</button><div class="busca-disc"><span class="bic">🔍</span><input type="text" id="cliBuscaInput" placeholder="BUSCAR CLIENTE..." value="${buscaCli}" oninput="buscaCli=this.value;pagCli=1;renderClientes(true)"><button class="btn-mic" onclick="vozBusca('cliBuscaInput',v=>buscaCli=v,()=>{pagCli=1;renderClientes()})">🎤</button></div></div>`;h+=`<div class="chips">${[['todos','TODOS'],['ativos','ATIVOS'],['inativos','INATIVOS']].map(s=>`<button class="${filtroCliStatus===s[0]?'ativo':''}" onclick="filtroCliStatus='${s[0]}';pagCli=1;renderClientes()">${s[1]}</button>`).join('')}</div>`;if(selCli.size)h+=`<div class="sel-bar"><span>🗂️ ${selCli.size} SELECIONADO(S)</span><button class="btn" style="min-height:36px;padding:6px 12px;font-size:12px;background:var(--badgeVermelho);color:var(--vermelho)" onclick="excluirSelecionadosClientes()">🗑️ EXCLUIR SELECIONADOS</button></div>`;if(!lista.length){h+=`<div class="vazio">NENHUM CLIENTE ENCONTRADO.</div>`;$('res-clientes').innerHTML=h;return}h+=`<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:36px"><input type="checkbox" class="chk" ${selPag?'checked':''} onchange="selCliPage(this.checked)"></th><th>NOME</th><th>TELEFONE</th><th>ENDEREÇO</th><th>CATÁLOGO</th><th>STATUS</th><th style="text-align:right">AÇÕES</th></tr></thead><tbody>`;pagina.forEach(c=>{const ativo=c.ativo!==false;h+=`<tr class="${ativo?'':'inativo'}"><td><input type="checkbox" class="chk" ${selCli.has(c.id)?'checked':''} onchange="toggleSelCli('${c.id}',this.checked)"></td><td><span style="cursor:pointer;font-weight:700" onclick="editarCliente('${c.id}')">${c.nome}</span></td><td>${c.telefone||'—'}</td><td>${[c.endereco,c.bairro].filter(Boolean).join(' • ')||'—'}</td><td>${c.catAcesso?(c.catPreco?'<span class="badge b-entregue">COM PREÇO</span>':'<span class="badge b-atendente">SEM PREÇO</span>'):'<span class="sub">—</span>'}</td><td><button class="btn-ic ${ativo?'ed':'ex'}" style="width:auto;padding:0 10px;font-size:11px;min-height:30px;border-radius:999px" onclick="toggleClienteStatus('${c.id}')">${ativo?'ATIVO':'INATIVO'}</button></td><td><span class="acoes-td" style="justify-content:flex-end"><button class="btn-ic ed" onclick="editarCliente('${c.id}')">✏️</button><button class="btn-ic ex" onclick="excluirCliente('${c.id}')">🗑️</button></span></td></tr>`});h+=`</tbody></table></div><div class="pag-bar"><span class="info">MOSTRANDO ${ini+1}–${fim} DE ${lista.length} • PÁGINA ${pagCli}/${totalPag}</span><span><button class="pag-btn" ${pagCli<=1?'disabled':''} onclick="pagCli--;renderClientes()">‹ ANTERIOR</button> <button class="pag-btn" ${pagCli>=totalPag?'disabled':''} onclick="pagCli++;renderClientes()">PRÓXIMA ›</button></span></div>`;$('res-clientes').innerHTML=h;if(foco){const n=$('cliBuscaInput');if(n){n.focus();try{n.setSelectionRange(cur,cur)}catch(e){}}}}
+function renderClientes(){
+  var view=$('res-clientes');
+  if(!view)return;
+  if(!$('cliBuscaInput')){
+    var h='<div class="toolbar"><button class="btn btn-cor" style="flex:0" onclick="novoCliente()">➕ NOVO CLIENTE</button><div class="busca-disc"><span class="bic">🔍</span><input type="text" id="cliBuscaInput" placeholder="BUSCAR CLIENTE..." value="'+(buscaCli||'')+'" oninput="buscaCli=this.value;pagCli=1;renderCliLista()"><button class="btn-mic" onclick="vozBusca(\'cliBuscaInput\',function(v){buscaCli=v},function(){pagCli=1;renderCliLista()})">🎤</button></div></div>';
+    h+='<div class="chips" id="cliChips"></div>';
+    h+='<div id="cliSelBar"></div>';
+    h+='<div id="cliLista"></div>';
+    h+='<div id="cliPag"></div>';
+    view.innerHTML=h;
+  }
+  renderCliChips();
+  renderCliSelBar();
+  renderCliLista();
+}
+
+function renderCliChips(){
+  var chips=$('cliChips');
+  if(!chips)return;
+  chips.innerHTML=[['todos','TODOS'],['ativos','ATIVOS'],['inativos','INATIVOS']].map(function(s){
+    return '<button class="'+(filtroCliStatus===s[0]?'ativo':'')+'" onclick="filtroCliStatus=\''+s[0]+'\';pagCli=1;renderCliChips();renderCliLista()">'+s[1]+'</button>';
+  }).join('');
+}
+
+function renderCliSelBar(){
+  var bar=$('cliSelBar');
+  if(!bar)return;
+  if(selCli.size){
+    bar.innerHTML='<div class="sel-bar"><span>🗂️ '+selCli.size+' SELECIONADO(S)</span><button class="btn" style="min-height:36px;padding:6px 12px;font-size:12px;background:var(--badgeVermelho);color:var(--vermelho)" onclick="excluirSelecionadosClientes()">🗑️ EXCLUIR SELECIONADOS</button></div>';
+  }else{
+    bar.innerHTML='';
+  }
+}
+
+function renderCliLista(){
+  var box=$('cliLista');
+  if(!box)return;
+  var lista=clientesFiltrados();
+  var totalPag=Math.max(1,Math.ceil(lista.length/porPagCli));
+  if(pagCli>totalPag)pagCli=totalPag;
+  var ini=(pagCli-1)*porPagCli,fim=Math.min(ini+porPagCli,lista.length),pagina=lista.slice(ini,fim);
+  var selPag=pagina.length>0&&pagina.every(function(c){return selCli.has(c.id)});
+  var h='';
+  if(!lista.length){
+    h='<div class="vazio">NENHUM CLIENTE ENCONTRADO.</div>';
+    box.innerHTML=h;
+    var pag=$('cliPag');if(pag)pag.innerHTML='';
+    return;
+  }
+  h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:36px"><input type="checkbox" class="chk" '+(selPag?'checked':'')+' onchange="selCliPage(this.checked)"></th><th>NOME</th><th>TELEFONE</th><th>ENDEREÇO</th><th>CATÁLOGO</th><th>STATUS</th><th style="text-align:right">AÇÕES</th></tr></thead><tbody>';
+  pagina.forEach(function(c){
+    var ativo=c.ativo!==false;
+    h+='<tr class="'+(ativo?'':'inativo')+'"><td><input type="checkbox" class="chk" '+(selCli.has(c.id)?'checked':'')+' onchange="toggleSelCli(\''+c.id+'\',this.checked)"></td><td><span style="cursor:pointer;font-weight:700" onclick="editarCliente(\''+c.id+'\')">'+c.nome+'</span></td><td>'+(c.telefone||'—')+'</td><td>'+([c.endereco,c.bairro].filter(Boolean).join(' • ')||'—')+'</td><td>'+(c.catAcesso?(c.catPreco?'<span class="badge b-entregue">COM PREÇO</span>':'<span class="badge b-atendente">SEM PREÇO</span>'):'<span class="sub">—</span>')+'</td><td><button class="btn-ic '+(ativo?'ed':'ex')+'" style="width:auto;padding:0 10px;font-size:11px;min-height:30px;border-radius:999px" onclick="toggleClienteStatus(\''+c.id+'\')">'+(ativo?'ATIVO':'INATIVO')+'</button></td><td><span class="acoes-td" style="justify-content:flex-end"><button class="btn-ic ed" onclick="editarCliente(\''+c.id+'\')">✏️</button><button class="btn-ic ex" onclick="excluirCliente(\''+c.id+'\')">🗑️</button></span></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  box.innerHTML=h;
+  var pag=$('cliPag');
+  if(pag)pag.innerHTML='<div class="pag-bar"><span class="info">MOSTRANDO '+(ini+1)+'–'+fim+' DE '+lista.length+' • PÁGINA '+pagCli+'/'+totalPag+'</span><span><button class="pag-btn" '+(pagCli<=1?'disabled':'')+' onclick="pagCli--;renderCliLista()">‹ ANTERIOR</button> <button class="pag-btn" '+(pagCli>=totalPag?'disabled':'')+' onclick="pagCli++;renderCliLista()">PRÓXIMA ›</button></span></div>';
+}
 function novoCliente(){clienteEditId=null;$('mcTitulo').textContent='NOVO CLIENTE';['cNome','cTel','cBairro','cEnd','cObs','cCatUsuario','cCatSenha'].forEach(i=>$(i).value='');$('cCatAcesso').checked=false;$('cCatPreco').checked=false;abrir('mCliente')}
 function editarCliente(id){const c=S.clientes.find(x=>x.id===id);if(!c)return;clienteEditId=id;$('mcTitulo').textContent='EDITAR CLIENTE';$('cNome').value=c.nome;$('cTel').value=c.telefone||'';$('cBairro').value=c.bairro||'';$('cEnd').value=c.endereco||'';$('cObs').value=c.obs||'';$('cCatAcesso').checked=!!c.catAcesso;$('cCatPreco').checked=!!c.catPreco;$('cCatUsuario').value=c.catUsuario||'';$('cCatSenha').value=c.catSenha||'';abrir('mCliente')}
 async function salvarCliente(){const nome=$('cNome').value.trim();if(!nome){toast('INFORME O NOME');return}const d={nome,telefone:$('cTel').value.trim(),bairro:$('cBairro').value.trim(),endereco:$('cEnd').value.trim(),obs:$('cObs').value.trim(),catAcesso:!!$('cCatAcesso').checked,catUsuario:$('cCatUsuario').value.trim(),catSenha:$('cCatSenha').value.trim(),catPreco:!!$('cCatPreco').checked};let record;if(clienteEditId){const c=cliente(clienteEditId);record={...c,...d}}else{record={id:uid(),ativo:true,...d}}const salvo=await salvarRegistro('clientes',record);if(!salvo)return;fechar('mCliente');pagCli=1;renderAll();if($('mPedido').classList.contains('aberta'))preencherCliente(clienteEditId||salvo.id);toast('CLIENTE SALVO ✅')}
@@ -391,7 +483,64 @@ function contasFiltradas(){const b=buscaConta.trim().toLowerCase();return S.clie
 function toggleSelConta(id,on){if(on)selConta.add(id);else selConta.delete(id);renderContas()}
 function selContaPage(on){contasFiltradas().slice((pagConta-1)*porPagConta,(pagConta-1)*porPagConta+porPagConta).forEach(x=>{if(on)selConta.add(x.c.id);else selConta.delete(x.c.id)});renderContas()}
 function excluirSelecionadosContas(){if(!selConta.size)return;soMaster(async()=>{if(!confirm('EXCLUIR '+selConta.size+' CLIENTE(S) E TODOS OS PEDIDOS DELES?'))return;if(!confirm('TEM CERTEZA? ISSO NÃO PODE SER DESFEITO.'))return;const ops=[];S.pedidos.filter(p=>selConta.has(p.clienteId)).forEach(p=>ops.push({collection:'pedidos',id:p.id}));selConta.forEach(id=>ops.push({collection:'clientes',id}));const ok=await excluirRegistros(ops);if(!ok)return;selConta.clear();renderAll();toast('CLIENTES EXCLUÍDOS')})}
-function renderContas(manterFoco){const inA=$('contaBuscaInput');const foco=manterFoco&&inA&&document.activeElement===inA;const cur=inA?inA.selectionStart:0;const lista=contasFiltradas();const totalPag=Math.max(1,Math.ceil(lista.length/porPagConta));if(pagConta>totalPag)pagConta=totalPag;const ini=(pagConta-1)*porPagConta,fim=Math.min(ini+porPagConta,lista.length),pagina=lista.slice(ini,fim);const selPag=pagina.length>0&&pagina.every(x=>selConta.has(x.c.id));let h=`<div class="toolbar"><div class="busca-disc"><span class="bic">🔍</span><input type="text" id="contaBuscaInput" placeholder="BUSCAR CLIENTE..." value="${buscaConta}" oninput="buscaConta=this.value;pagConta=1;renderContas(true)"><button class="btn-mic" onclick="vozBusca('contaBuscaInput',v=>buscaConta=v,()=>{pagConta=1;renderContas()})">🎤</button></div></div>`;h+=`<div class="chips">${[['todos','TODOS'],['apagar','A PAGAR'],['pago','PAGO']].map(s=>`<button class="${filtroConta===s[0]?'ativo':''}" onclick="filtroConta='${s[0]}';pagConta=1;renderContas()">${s[1]}</button>`).join('')}</div>`;if(selConta.size)h+=`<div class="sel-bar"><span>🗂️ ${selConta.size} SELECIONADO(S)</span><button class="btn" style="min-height:36px;padding:6px 12px;font-size:12px;background:var(--badgeVermelho);color:var(--vermelho)" onclick="excluirSelecionadosContas()">🗑️ EXCLUIR SELECIONADOS</button></div>`;if(!lista.length){h+=`<div class="vazio">NENHUMA CONTA ENCONTRADA. DIGITE O NOME DO CLIENTE OU MUDE O FILTRO.</div>`;$('res-contas').innerHTML=h;return}h+=`<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:36px"><input type="checkbox" class="chk" ${selPag?'checked':''} onchange="selContaPage(this.checked)"></th><th>CLIENTE</th><th>QUANTO DEVE</th><th>JÁ PAGOU</th><th>SITUAÇÃO</th><th style="text-align:right">AÇÕES</th></tr></thead><tbody>`;pagina.forEach(x=>{const c=x.c,v=x.v,apagar=v.aReceber>0;h+=`<tr><td><input type="checkbox" class="chk" ${selConta.has(c.id)?'checked':''} onchange="toggleSelConta('${c.id}',this.checked)"></td><td><span style="cursor:pointer;font-weight:700" onclick="verConta('${c.id}')">${c.nome}</span></td><td style="color:${apagar?'var(--vermelho)':'var(--verde)'};font-weight:800">${din(v.aReceber)}</td><td>${din(v.recebido)}</td><td>${apagar?'<span class="badge b-pagpend">A PAGAR</span>':'<span class="badge b-entregue">PAGO</span>'}</td><td><span class="acoes-td" style="justify-content:flex-end"><button class="btn-ic ed" onclick="verConta('${c.id}')">👁️</button>${apagar?`<button class="btn-ic" style="background:var(--badgeVerde);color:var(--verde)" onclick="verConta('${c.id}')">💵</button>`:''}<button class="btn-ic ex" onclick="excluirCliente('${c.id}')">🗑️</button></span></td></tr>`});h+=`</tbody></table></div><div class="pag-bar"><span class="info">MOSTRANDO ${ini+1}–${fim} DE ${lista.length} • PÁGINA ${pagConta}/${totalPag}</span><span><button class="pag-btn" ${pagConta<=1?'disabled':''} onclick="pagConta--;renderContas()">‹ ANTERIOR</button> <button class="pag-btn" ${pagConta>=totalPag?'disabled':''} onclick="pagConta++;renderContas()">PRÓXIMA ›</button></span></div>`;$('res-contas').innerHTML=h;if(foco){const n=$('contaBuscaInput');if(n){n.focus();try{n.setSelectionRange(cur,cur)}catch(e){}}}}
+function renderContas(){
+  var view=$('res-contas');
+  if(!view)return;
+  if(!$('contaBuscaInput')){
+    var h='<div class="toolbar"><div class="busca-disc"><span class="bic">🔍</span><input type="text" id="contaBuscaInput" placeholder="BUSCAR CLIENTE..." value="'+(buscaConta||'')+'" oninput="buscaConta=this.value;pagConta=1;renderContaLista()"><button class="btn-mic" onclick="vozBusca(\'contaBuscaInput\',function(v){buscaConta=v},function(){pagConta=1;renderContaLista()})">🎤</button></div></div>';
+    h+='<div class="chips" id="contaChips"></div>';
+    h+='<div id="contaSelBar"></div>';
+    h+='<div id="contaLista"></div>';
+    h+='<div id="contaPag"></div>';
+    view.innerHTML=h;
+  }
+  renderContaChips();
+  renderContaSelBar();
+  renderContaLista();
+}
+
+function renderContaChips(){
+  var chips=$('contaChips');
+  if(!chips)return;
+  chips.innerHTML=[['todos','TODOS'],['apagar','A PAGAR'],['pago','PAGO']].map(function(s){
+    return '<button class="'+(filtroConta===s[0]?'ativo':'')+'" onclick="filtroConta=\''+s[0]+'\';pagConta=1;renderContaChips();renderContaLista()">'+s[1]+'</button>';
+  }).join('');
+}
+
+function renderContaSelBar(){
+  var bar=$('contaSelBar');
+  if(!bar)return;
+  if(selConta.size){
+    bar.innerHTML='<div class="sel-bar"><span>🗂️ '+selConta.size+' SELECIONADO(S)</span><button class="btn" style="min-height:36px;padding:6px 12px;font-size:12px;background:var(--badgeVermelho);color:var(--vermelho)" onclick="excluirSelecionadosContas()">🗑️ EXCLUIR SELECIONADOS</button></div>';
+  }else{
+    bar.innerHTML='';
+  }
+}
+
+function renderContaLista(){
+  var box=$('contaLista');
+  if(!box)return;
+  var lista=contasFiltradas();
+  var totalPag=Math.max(1,Math.ceil(lista.length/porPagConta));
+  if(pagConta>totalPag)pagConta=totalPag;
+  var ini=(pagConta-1)*porPagConta,fim=Math.min(ini+porPagConta,lista.length),pagina=lista.slice(ini,fim);
+  var selPag=pagina.length>0&&pagina.every(function(x){return selConta.has(x.c.id)});
+  var h='';
+  if(!lista.length){
+    box.innerHTML='<div class="vazio">NENHUMA CONTA ENCONTRADA. DIGITE O NOME DO CLIENTE OU MUDE O FILTRO.</div>';
+    var pag=$('contaPag');if(pag)pag.innerHTML='';
+    return;
+  }
+  h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:36px"><input type="checkbox" class="chk" '+(selPag?'checked':'')+' onchange="selContaPage(this.checked)"></th><th>CLIENTE</th><th>QUANTO DEVE</th><th>JÁ PAGOU</th><th>SITUAÇÃO</th><th style="text-align:right">AÇÕES</th></tr></thead><tbody>';
+  pagina.forEach(function(x){
+    var c=x.c,v=x.v,apagar=v.aReceber>0;
+    h+='<tr><td><input type="checkbox" class="chk" '+(selConta.has(c.id)?'checked':'')+' onchange="toggleSelConta(\''+c.id+'\',this.checked)"></td><td><span style="cursor:pointer;font-weight:700" onclick="verConta(\''+c.id+'\')">'+c.nome+'</span></td><td style="color:'+(apagar?'var(--vermelho)':'var(--verde)')+';font-weight:800">'+din(v.aReceber)+'</td><td>'+din(v.recebido)+'</td><td>'+(apagar?'<span class="badge b-pagpend">A PAGAR</span>':'<span class="badge b-entregue">PAGO</span>')+'</td><td><span class="acoes-td" style="justify-content:flex-end"><button class="btn-ic ed" onclick="verConta(\''+c.id+'\')">👁️</button>'+(apagar?'<button class="btn-ic" style="background:var(--badgeVerde);color:var(--verde)" onclick="verConta(\''+c.id+'\')">💵</button>':'')+'<button class="btn-ic ex" onclick="excluirCliente(\''+c.id+'\')">🗑️</button></span></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  box.innerHTML=h;
+  var pag=$('contaPag');
+  if(pag)pag.innerHTML='<div class="pag-bar"><span class="info">MOSTRANDO '+(ini+1)+'–'+fim+' DE '+lista.length+' • PÁGINA '+pagConta+'/'+totalPag+'</span><span><button class="pag-btn" '+(pagConta<=1?'disabled':'')+' onclick="pagConta--;renderContaLista()">‹ ANTERIOR</button> <button class="pag-btn" '+(pagConta>=totalPag?'disabled':'')+' onclick="pagConta++;renderContaLista()">PRÓXIMA ›</button></span></div>';
+}
 function toggleSelPedidoReceber(id,on){if(on)receberSelIds.add(id);else receberSelIds.delete(id);verConta(contaAtivaId)}
 function toggleTodosPedidosReceber(on){const c=S.clientes.find(x=>x.id===contaAtivaId);if(!c)return;const prazo=S.pedidos.filter(p=>p.clienteId===c.id&&ehPrazo(p)&&saldoPedido(p)>0);prazo.forEach(p=>{if(on)receberSelIds.add(p.id);else receberSelIds.delete(p.id)});verConta(contaAtivaId)}
 function abrirReceberSelecionados(){const c=S.clientes.find(x=>x.id===contaAtivaId);if(!c)return;const ids=Array.from(receberSelIds);if(!ids.length){toast('SELECIONE AO MENOS UM PEDIDO');return}const pedidos=S.pedidos.filter(p=>ids.includes(p.id)&&ehPrazo(p)&&saldoPedido(p)>0).sort((a,b)=>a.criadoEm.localeCompare(b.criadoEm));if(!pedidos.length){toast('NENHUM PEDIDO SELECIONADO TEM SALDO');return}const total=pedidos.reduce((a,p)=>a+saldoPedido(p),0);pagPedidoId=null;pedDados={receber:true,pedidos};$('pgInfo').innerHTML=c.nome+' • '+pedidos.length+' PEDIDO(S) • TOTAL SELECIONADO <b style="color:var(--cor)">'+din(total)+'</b><br><span style="font-size:11px">O SISTEMA PAGA OS PEDIDOS MAIS ANTIGOS PRIMEIRO</span>';$('pgValor').value=moedaInput(total);setForma('pix','pg');abrir('mPagamento')}
