@@ -699,6 +699,7 @@ async function compartilharPedido(id){const p=S.pedidos.find(x=>x.id===id);if(!p
 function verPedido(id){const p=S.pedidos.find(x=>x.id===id);if(!p)return;const c=cliente(p.clienteId);let h=`<div class="modal-head"><h2>${c?c.nome:'CLIENTE'} #${p.numero||''}</h2><button class="btn-x" onclick="fechar('mDetalhe')">✕</button></div><div class="linha" style="margin:2px 0 8px"><span class="badge ${ST[statusPedido(p)][1]}">${ST[statusPedido(p)][0]}</span><span class="sub">${dt(p.criadoEm)}</span></div>${p.entreguePor?`<div class="sub" style="color:var(--verde);margin-bottom:8px">✅ ENTREGUE POR: ${p.entreguePor}</div>`:''}${(c&&(c.endereco||c.bairro))?`<div style="padding:10px;background:var(--badgeBg);border:1px solid var(--borda);border-radius:12px"><div style="font-weight:900;font-size:15px;color:var(--texto)">📍 ${c.endereco||'SEM ENDEREÇO'}</div>${c.bairro?`<div style="font-weight:700;font-size:13px;color:var(--cor);margin-top:2px">🗺️ ${c.bairro}</div>`:''}${c.telefone?`<div class="sub" style="margin-top:2px">📞 ${c.telefone}</div>`:''}</div>`:''}<div style="margin-top:12px"><div class="sub" style="margin-bottom:4px;font-weight:800">📦 ITENS DO PEDIDO</div>${p.itens.map(i=>`<div class="item-ent"><span class="desc">${itemTxt(i)}</span><span class="sub">${din(i.qtd*i.preco)}</span></div>`).join('')}</div>${p.obs?`<label>OBSERVAÇÕES</label><div class="sub">${p.obs}</div>`:''}<div class="linha" style="margin-top:10px"><span class="sub" style="font-size:12px;color:var(--texto2)">VALOR: ${din(totalPedido(p))}</span></div><div class="acoes"><button class="btn btn-azul" onclick="imprimirPedido('${p.id}')">🖨️ IMPRIMIR</button><button class="btn btn-cor" onclick="compartilharPedido('${p.id}')">📲 COMPARTILHAR PDF</button><button class="btn btn-claro" onclick="editarPedido('${p.id}');fechar('mDetalhe')">EDITAR</button>${podeExcluir()?`<button class="btn" style="background:var(--badgeVermelho);color:var(--vermelho)" onclick="excluirPedido('${p.id}')">EXCLUIR</button>`:''}</div>`;$('mDetalheCorpo').innerHTML=h;abrir('mDetalhe')}
 function excluirPedido(id){soMaster(async()=>{if(!confirm('EXCLUIR ESTE PEDIDO?'))return;const ok=await excluirRegistro('pedidos',id);if(!ok)return;fechar('mDetalhe');renderAll();toast('PEDIDO EXCLUÍDO')})}
 function renderFinanceiro(){if(!usuarioLogado)return;const atras=atrasados();let h=`<h3 style="margin:10px 0 6px;color:var(--texto)">⏰ CLIENTES DEVENDO HÁ MAIS DE 30 DIAS (SEM NENHUM PAGAMENTO)</h3>`;if(!atras.length)h+=`<div class="vazio">NENHUM CLIENTE NESTA SITUAÇÃO. 🎉</div>`;atras.forEach(a=>{const ini=(a.c.nome||'?').trim().charAt(0).toUpperCase();h+=`<div class="sug" onclick="verConta('${a.c.id}')"><div class="foto" style="background:var(--vermelho)">${ini}</div><div class="info"><div class="n">${a.c.nome}</div><div class="d">⚠️ ${a.dias} DIA(S) SEM NENHUM PAGAMENTO • DEVE ${din(a.v)}</div></div><div class="seta">›</div></div>`});$('view-financeiro').innerHTML=h}
+var entExpandido={};
 function renderEntregas(){
   if(typeof window.entBusca==='undefined')window.entBusca='';
   var view=$('view-entregas');
@@ -726,12 +727,13 @@ function renderEntLista(){
   lista.forEach(function(p){
     var c=cliente(p.clienteId);
     var st=statusPedido(p);
+    var aberto=entExpandido[p.id];
     h+='<div class="card">';
-    h+='<div class="linha" style="cursor:pointer" onclick="var d=document.getElementById(\'entDet_'+p.id+'\');var b=document.getElementById(\'entBtn_'+p.id+'\');if(d.style.display==\'none\'){d.style.display=\'block\';b.textContent=\'▲ FECHAR\'}else{d.style.display=\'none\';b.textContent=\'▼ VER\'}">';
+    h+='<div class="linha" style="cursor:pointer" onclick="toggleEntCard(\''+p.id+'\')">';
     h+='<div style="display:flex;align-items:center;gap:8px"><h3 style="margin:0">'+(c?c.nome:'SEM CLIENTE')+'</h3><span class="badge '+ST[st][1]+'">'+ST[st][0]+'</span></div>';
-    h+='<div style="display:flex;align-items:center;gap:8px"><span class="sub" style="font-size:14px;font-weight:800;color:var(--cor)">'+din(totalPedido(p))+'</span><button class="btn btn-claro" id="entBtn_'+p.id+'" style="min-height:36px;padding:6px 12px;font-size:12px" onclick="event.stopPropagation();var d=document.getElementById(\'entDet_'+p.id+'\');var b=document.getElementById(\'entBtn_'+p.id+'\');if(d.style.display==\'none\'){d.style.display=\'block\';b.textContent=\'▲ FECHAR\'}else{d.style.display=\'none\';b.textContent=\'▼ VER\'}">▼ VER</button></div>';
+    h+='<div style="display:flex;align-items:center;gap:8px"><span class="sub" style="font-size:14px;font-weight:800;color:var(--cor)">'+din(totalPedido(p))+'</span><button class="btn btn-claro" id="entBtn_'+p.id+'" style="min-height:36px;padding:6px 12px;font-size:12px" onclick="event.stopPropagation();toggleEntCard(\''+p.id+'\')">'+(aberto?'▲ FECHAR':'▼ VER')+'</button></div>';
     h+='</div>';
-    h+='<div id="entDet_'+p.id+'" style="display:none;margin-top:10px">';
+    h+='<div id="entDet_'+p.id+'" style="'+(aberto?'display:block':'display:none')+';margin-top:10px">';
     if(p.entreguePor)h+='<div class="sub" style="color:var(--verde);margin-bottom:8px">✅ ENTREGUE POR: '+p.entreguePor+'</div>';
     if(c&&(c.endereco||c.bairro))h+='<div style="padding:10px;background:var(--badgeBg);border:1px solid var(--borda);border-radius:12px"><div style="font-weight:900;font-size:15px;color:var(--texto)">📍 '+(c.endereco||'SEM ENDEREÇO')+'</div>'+(c.bairro?'<div style="font-weight:700;font-size:13px;color:var(--cor);margin-top:2px">🗺️ '+c.bairro+'</div>':'')+(c.telefone?'<div class="sub" style="margin-top:2px">📞 '+c.telefone+'</div>':'')+'</div>';
     h+='<div style="margin-top:10px"><div class="sub" style="margin-bottom:4px;font-weight:800">📦 ITENS PARA ENTREGAR</div>';
@@ -749,6 +751,16 @@ function renderEntLista(){
     h+='</div></div>';
   });
   box.innerHTML=h;
+}
+
+function toggleEntCard(id){
+  entExpandido[id]=!entExpandido[id];
+  var d=document.getElementById('entDet_'+id);
+  var b=document.getElementById('entBtn_'+id);
+  if(d&&b){
+    d.style.display=entExpandido[id]?'block':'none';
+    b.textContent=entExpandido[id]?'▲ FECHAR':'▼ VER';
+  }
 }
 function renderEntregadores(){let h='<div class="toolbar"><button class="btn btn-cor" style="flex:1" onclick="novoEntregador()">➕ CADASTRAR ENTREGADOR</button></div>';if(!S.entregadores.length){h+='<div class="vazio">NENHUM ENTREGADOR CADASTRADO. TOQUE EM + CADASTRAR ENTREGADOR.</div>';$('view-entregadores').innerHTML=h;return}S.entregadores.slice().sort((a,b)=>a.nome.localeCompare(b.nome)).forEach(e=>{const feitas=S.pedidos.filter(p=>p.entreguePor===e.nome).length;h+='<div class="card"><div class="linha"><h3>'+e.nome+'</h3></div><div class="sub">'+feitas+' ENTREGA(S) FEITA(S)</div><div class="acoes" style="margin-top:8px"><button class="btn btn-claro" style="flex:1;min-height:42px;padding:7px" onclick="editarEntregador(\''+e.id+'\')">EDITAR</button><button class="btn" style="flex:1;min-height:42px;padding:7px;background:var(--badgeVermelho);color:var(--vermelho)" onclick="excluirEntregador(\''+e.id+'\')">EXCLUIR</button></div></div>'});$('view-entregadores').innerHTML=h}
 function novoEntregador(){entregadorEditId=null;$('meTitulo').textContent='NOVO ENTREGADOR';$('eNome').value='';abrir('mEntregador')}
