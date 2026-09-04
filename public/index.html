@@ -252,8 +252,7 @@ function renderCatalogoCliente(){
   if(!lista.length){grid.innerHTML='<div class="vazio">NENHUM PRODUTO ENCONTRADO.</div>';return}
   grid.innerHTML='<div class="cat-grid">'+lista.slice().sort((a,b2)=>a.nome.localeCompare(b2.nome)).map(p=>{
     const foto=p.foto?'<img src="'+p.foto+'" class="cat-foto">':'<div class="cat-foto">'+(p.emoji||'📦')+'</div>';
-    const formas=formasProduto(p).map(f=>'<div class="sub">'+unLabel(f.un)+(c.catPreco?' • '+din(f.preco):'')+'</div>').join('');
-    return '<div class="cat-card">'+foto+'<div class="cat-nome">'+p.nome+'</div>'+formas+'<button class="btn btn-cor" style="min-height:38px;padding:6px;font-size:12px" onclick="pedirProdutoCliente(\''+p.id+'\')">➕ PEDIR</button></div>';
+    return '<div class="cat-card">'+foto+'<div class="cat-nome">'+p.nome+'</div><button class="btn btn-cor" style="min-height:38px;padding:6px;font-size:12px" onclick="pedirProdutoCliente(\''+p.id+'\')">➕ PEDIR</button></div>';
   }).join('')+'</div>';
 }
 function abrirContaCliente(){
