@@ -585,7 +585,7 @@ function alternarTema(){const atual=document.documentElement.getAttribute('data-
 (function(){const t=localStorage.getItem('soares_tema')||'dark';aplicarTema(t)})();
 load();
 syncPull();
-setInterval(syncPull,30000);
+setInterval(syncPull,3000);
 function usuariosFiltrados(){const b=buscaUsu.trim().toLowerCase();return S.usuarios.filter(u=>{if(filtroUsuPerfil!=='todos'&&u.perfil!==filtroUsuPerfil)return false;return !b||(u.nome||'').toLowerCase().includes(b)}).sort((a,b)=>a.nome.localeCompare(b.nome))}
 function toggleSelUsu(id,on){if(on)selUsu.add(id);else selUsu.delete(id);renderUsuarios()}
 function selUsuPage(on){usuariosFiltrados().slice((pagUsu-1)*porPagUsu,(pagUsu-1)*porPagUsu+porPagUsu).forEach(u=>{if(on)selUsu.add(u.id);else selUsu.delete(u.id)});renderUsuarios()}
