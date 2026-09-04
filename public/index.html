@@ -124,7 +124,7 @@ t-grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}@media(max-wid
 <div class="main"><header class="header" id="headerSistema" style="display:none"><div class="header-nome" id="headerNome">SUPER MUNDINHO CONSTRUÇÕES</div><div class="header-acoes"><button class="hbtn" id="btnSino" onclick="abrirMsg()">🔔<span class="sino-badge" id="sinoBadge" style="display:none">0</span></button></div></header><div class="content">
 <div id="view-login" class="view ativa"><div class="login-wrap"><div class="login-box"><div class="login-top"><div class="escudo-box"><img class="escudo-img" src="logo.png" alt="Escudo" onerror="this.style.display='none'"></div><h2>SOARES SOFTWARE</h2><div class="sub">SISTEMA GS - SOLUÇÕES CORPORATIVAS</div></div><label>USUÁRIO</label><div class="campo-ic"><span class="ci">👤</span><input type="text" id="loginUsuario" placeholder="DIGITE SEU NOME" onkeydown="if(event.key==='Enter')$('loginSenha').focus()" autocomplete="off"></div><label>SENHA</label><div class="campo-ic"><span class="ci">🔒</span><input type="password" id="loginSenha" inputmode="numeric" placeholder="SUA SENHA" onkeydown="if(event.key==='Enter')fazerLogin()"><button type="button" class="olho" onclick="verSenha(this)">👁</button></div><button class="btn-login" onclick="fazerLogin()">ENTRAR</button></div></div></div>
 <div id="view-inicio" class="view"></div>
-<div id="view-pedidos" class="view"><div class="toolbar"><input type="date" id="filtroDe" onchange="filtroDataDe=this.value;renderPedidos()"><span class="sub">ATÉ</span><input type="date" id="filtroAte" onchange="filtroDataAte=this.value;renderPedidos()"><button class="btn btn-claro" style="flex:0;min-height:42px;padding:7px 10px;font-size:12px" onclick="$('filtroDe').value='';$('filtroAte').value='';filtroDataDe='';filtroDataAte='';renderPedidos()">LIMPAR</button><button class="btn btn-azul" style="flex:0;min-height:42px;padding:7px 10px;font-size:12px" onclick="var h=new Date();var d=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');$('filtroDe').value=d;$('filtroAte').value=d;filtroDataDe=d;filtroDataAte=d;renderPedidos()">HOJE</button></div><div id="res-pedidos"></div></div>
+<div id="view-pedidos" class="view"><div id="res-pedidos"></div></div>
 <div id="view-clientes" class="view"><div id="res-clientes"></div></div>
 <div id="view-produtos" class="view"></div>
 <div id="view-contas" class="view"><div id="res-contas"></div></div>
@@ -394,7 +394,89 @@ function toggleTodosPedidosReceber(on){const c=S.clientes.find(x=>x.id===contaAt
 function abrirReceberSelecionados(){const c=S.clientes.find(x=>x.id===contaAtivaId);if(!c)return;const ids=Array.from(receberSelIds);if(!ids.length){toast('SELECIONE AO MENOS UM PEDIDO');return}const pedidos=S.pedidos.filter(p=>ids.includes(p.id)&&ehPrazo(p)&&saldoPedido(p)>0).sort((a,b)=>a.criadoEm.localeCompare(b.criadoEm));if(!pedidos.length){toast('NENHUM PEDIDO SELECIONADO TEM SALDO');return}const total=pedidos.reduce((a,p)=>a+saldoPedido(p),0);pagPedidoId=null;pedDados={receber:true,pedidos};$('pgInfo').innerHTML=c.nome+' • '+pedidos.length+' PEDIDO(S) • TOTAL SELECIONADO <b style="color:var(--cor)">'+din(total)+'</b><br><span style="font-size:11px">O SISTEMA PAGA OS PEDIDOS MAIS ANTIGOS PRIMEIRO</span>';$('pgValor').value=moedaInput(total);setForma('pix','pg');abrir('mPagamento')}
 function toggleDetalheConta(pid){const el=document.getElementById('det-'+pid);if(!el)return;if(el.style.display!=='none'){el.style.display='none';return}const p=S.pedidos.find(x=>x.id===pid);if(!p)return;const pgs=p.pagamentos||[];let d=`<div style="background:var(--card2);border:1px solid var(--borda);border-radius:10px;padding:8px"><div class="sub" style="margin-bottom:4px;font-weight:800">📦 ITENS</div>`;d+=p.itens.map(i=>`<div class="item-ent"><span class="desc">${itemTxt(i)}</span><span class="sub">${din(i.qtd*i.preco)}</span></div>`).join('');d+=`<div class="sub" style="margin:8px 0 4px;font-weight:800">💳 PAGAMENTOS (${pgs.length})</div>`;if(!pgs.length){d+=`<div class="sub">NENHUM PAGAMENTO AINDA</div>`}else{d+=pgs.map((pg,ix)=>`<div class="pag-item"><span>${formaLabel(pg.forma)} ${din(pg.valor)} (${dt(pg.data)})</span>${podeExcluir()?`<button class="btn" style="min-height:32px;padding:4px 8px;font-size:11px;background:var(--badgeAmarelo);color:var(--amarelo)" onclick="estornarPagamento('${p.id}',${ix})">↩️ ESTORNAR</button>`:''}</div>`).join('')}d+=`<div class="linha" style="margin-top:8px"><button class="btn btn-claro" style="min-height:36px;padding:6px 10px;font-size:12px" onclick="verPedido('${p.id}')">VER PEDIDO</button>${saldoPedido(p)>0?`<button class="btn btn-cor" style="min-height:36px;padding:6px 10px;font-size:12px" onclick="abrirPagamento('${p.id}')">💵 RECEBER</button>`:''}</div></div>`;el.innerHTML=d;el.style.display='block'}
 function verConta(id){contaAtivaId=id;const c=S.clientes.find(x=>x.id===id);if(!c)return;const pedPrazo=S.pedidos.filter(p=>p.clienteId===id&&ehPrazo(p)).sort((a,b)=>a.criadoEm.localeCompare(b.criadoEm)),v=valoresConta(id);const devendo=pedPrazo.filter(p=>saldoPedido(p)>0),pagos=pedPrazo.filter(p=>saldoPedido(p)<=0);let h=`<div class="modal-head"><h2>${c.nome}</h2><button class="btn-x" onclick="fechar('mConta')">✕</button></div><div class="sub">${[c.telefone,c.bairro,c.endereco].filter(Boolean).join(' • ')}</div><div class="estat"><div class="card"><div class="num" style="color:${v.aReceber>0?'var(--vermelho)':'var(--verde)'}">${din(v.aReceber)}</div><div class="sub">QUANTO DEVE</div></div><div class="card"><div class="num" style="color:var(--verde)">${din(v.recebido)}</div><div class="sub">JÁ PAGOU</div></div></div><div class="chips"><button class="${contaTab==='apagar'?'ativo':''}" onclick="contaTab='apagar';verConta('${c.id}')">A PAGAR (${devendo.length})</button><button class="${contaTab==='pagos'?'ativo':''}" onclick="contaTab='pagos';verConta('${c.id}')">PAGOS (${pagos.length})</button></div>`;if(contaTab==='apagar'){if(devendo.length){const todosSel=devendo.every(p=>receberSelIds.has(p.id));h+=`<div class="linha" style="margin:8px 0"><label style="margin:0;display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" class="chk" ${todosSel?'checked':''} onchange="toggleTodosPedidosReceber(this.checked)"> SELECIONAR TODOS PARA RECEBER</label></div><div class="sel-bar" style="background:var(--badgeVerde);color:var(--verde)"><span>🗂️ ${receberSelIds.size} PEDIDO(S) SELECIONADO(S)</span><button class="btn btn-cor" style="min-height:38px;padding:7px 12px;font-size:12px" onclick="abrirReceberSelecionados()">💵 RECEBER SELECIONADOS</button></div>`}h+=`<label>PEDIDOS A PAGAR (${devendo.length})</label>`;if(!devendo.length)h+=`<div class="vazio">NENHUM PEDIDO A PAGAR. 🎉</div>`;devendo.forEach(p=>{const pago=totalPagoPedido(p),saldo=saldoPedido(p),num=String(p.numero||'').padStart(2,'0');h+=`<div class="card"><div class="linha"><label style="margin:0;display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" class="chk" ${receberSelIds.has(p.id)?'checked':''} onchange="toggleSelPedidoReceber('${p.id}',this.checked)"> <b style="color:var(--cor)">NUMERO PEDIDO ${num}</b></label><span class="badge b-pagpend">A PAGAR</span></div><div class="sub">${dt(p.criadoEm)}</div><div class="linha" style="margin-top:6px"><span class="total" style="margin:0">${din(totalPedido(p))}</span><button class="btn btn-claro" style="min-height:36px;padding:6px 10px;font-size:12px" onclick="toggleDetalheConta('${p.id}')">VER</button></div><div class="sub" style="margin-top:4px">JÁ PAGO: ${din(pago)} • FALTA: <b style="color:var(--vermelho)">${din(saldo)}</b></div><div id="det-${p.id}" style="display:none;margin-top:8px"></div></div>`})}else{h+=`<label>PEDIDOS PAGOS (${pagos.length})</label>`;if(!pagos.length)h+=`<div class="vazio">NENHUM PEDIDO PAGO AINDA.</div>`;pagos.forEach(p=>{const pago=totalPagoPedido(p),num=String(p.numero||'').padStart(2,'0');h+=`<div class="card"><div class="linha"><b style="color:var(--cor)">NUMERO PEDIDO ${num}</b><span class="badge b-entregue">PAGO</span></div><div class="sub">${dt(p.criadoEm)}</div><div class="linha" style="margin-top:6px"><span class="total" style="margin:0">${din(totalPedido(p))}</span><button class="btn btn-claro" style="min-height:36px;padding:6px 10px;font-size:12px" onclick="toggleDetalheConta('${p.id}')">VER</button></div><div class="sub" style="margin-top:4px">JÁ PAGO: ${din(pago)}</div><div id="det-${p.id}" style="display:none;margin-top:8px"></div></div>`})}h+=`<div class="acoes"><button class="btn btn-azul" onclick="fechar('mConta');histCli='${c.nome}';trocarTab('historico')">📜 HISTÓRICO</button>${podeExcluir()?`<button class="btn" style="background:var(--badgeVermelho);color:var(--vermelho)" onclick="excluirCliente('${c.id}')">EXCLUIR</button>`:''}</div>`;$('mContaCorpo').innerHTML=h;abrir('mConta')}
-function renderPedidos(){const b=buscaPed.toLowerCase();let lista=S.pedidos.filter(p=>filtroPed==='todos'||statusPedido(p)===filtroPed);if(b)lista=lista.filter(p=>(cliente(p.clienteId)?.nome||'').toLowerCase().includes(b));lista=lista.filter(p=>naData(p,filtroDataDe,filtroDataAte));lista.sort((a,b)=>b.criadoEm.localeCompare(a.criadoEm));const totalFiltro=lista.reduce((a,p)=>a+totalPedido(p),0);let h=`${pode('lancar_pedido')?`<div class="toolbar"><button class="btn btn-cor" style="flex:1" onclick="novoPedido()">➕ NOVO PEDIDO</button></div>`:''}<div class="chips">${['todos','pendente','parcial','entregue'].map(s=>`<button class="${filtroPed===s?'ativo':''}" onclick="filtroPed='${s}';renderPedidos()">${s==='todos'?'TODOS':s.toUpperCase()} (${S.pedidos.filter(p=>s==='todos'||statusPedido(p)===s).length})</button>`).join('')}</div><div class="sub" style="margin-bottom:8px">${lista.length} PEDIDO(S) • TOTAL ${din(totalFiltro)}</div>`;if(!lista.length)h+=`<div class="vazio">NENHUM PEDIDO AQUI. USE OS FILTROS DE DATA OU TOQUE EM + PEDIDO.</div>`;lista.forEach(p=>{const c=cliente(p.clienteId);h+=`<div class="card"><div class="linha"><h3>${c?c.nome:'CLIENTE REMOVIDO'}</h3><span class="badge ${ST[statusPedido(p)][1]}">${ST[statusPedido(p)][0]}</span>${badgePagamento(p)}</div><div class="sub">NUMERO PEDIDO ${String(p.numero||'').padStart(2,'0')} • ${dt(p.criadoEm)}</div><div class="linha" style="margin-top:8px"><span class="total" style="margin:0">${din(totalPedido(p))}</span><span><button class="btn btn-claro" style="min-height:40px;padding:8px 10px;font-size:12px" onclick="verPedido('${p.id}')">VER</button><button class="btn btn-azul" style="min-height:40px;padding:8px 10px;font-size:12px" onclick="imprimirPedido('${p.id}')">🖨️</button><button class="btn btn-cor" style="min-height:40px;padding:8px 10px;font-size:12px" onclick="compartilharPedido('${p.id}')">📲</button></span></div></div>`});$('res-pedidos').innerHTML=h}
+function renderPedidos(){
+  var view=$('res-pedidos');
+  if(!view)return;
+  if(!$('pedFiltroBtn')){
+    var h='';
+    if(pode('lancar_pedido'))h+='<div class="toolbar"><button class="btn btn-cor" style="flex:1" onclick="novoPedido()">➕ NOVO PEDIDO</button></div>';
+    h+='<div class="toolbar"><button class="btn btn-claro" id="pedFiltroBtn" style="flex:1" onclick="toggleFiltroPedidos()">🎛️ FILTRAR</button></div>';
+    h+='<div id="pedFiltroPanel" style="display:none;margin-bottom:10px;padding:12px;background:var(--badgeBg);border:1px solid var(--borda);border-radius:12px">';
+    h+='<div style="margin-bottom:8px"><div class="sub" style="font-weight:800;margin-bottom:4px">🔍 NOME DO CLIENTE</div><input type="text" id="pedBuscaInput" placeholder="DIGITE O NOME..." value="'+(buscaPed||'')+'" oninput="buscaPed=this.value;renderPedLista()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--fundo);color:var(--texto);box-sizing:border-box"></div>';
+    h+='<div style="display:flex;gap:8px;margin-bottom:8px"><div style="flex:1"><div class="sub" style="font-weight:800;margin-bottom:4px">DE</div><input type="date" id="pedDataDe" value="'+(filtroDataDe||'')+'" oninput="filtroDataDe=this.value;renderPedLista()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--fundo);color:var(--texto);box-sizing:border-box"></div><div style="flex:1"><div class="sub" style="font-weight:800;margin-bottom:4px">ATÉ</div><input type="date" id="pedDataAte" value="'+(filtroDataAte||'')+'" oninput="filtroDataAte=this.value;renderPedLista()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--fundo);color:var(--texto);box-sizing:border-box"></div></div>';
+    h+='<button class="btn" style="width:100%;background:var(--badgeAmarelo);color:var(--amarelo);min-height:38px" onclick="limparFiltrosPed()">🗑️ LIMPAR FILTROS</button>';
+    h+='</div>';
+    h+='<div class="chips" id="pedChips"></div>';
+    h+='<div class="sub" id="pedCount" style="margin-bottom:8px"></div>';
+    h+='<div id="pedLista"></div>';
+    view.innerHTML=h;
+  }
+  renderPedChips();
+  atualizarFiltroBtn();
+  renderPedLista();
+}
+
+function renderPedChips(){
+  var chips=$('pedChips');
+  if(!chips)return;
+  chips.innerHTML=['todos','pendente','parcial','entregue'].map(function(s){
+    return '<button class="'+(filtroPed===s?'ativo':'')+'" onclick="filtroPed=\''+s+'\';renderPedChips();renderPedLista()">'+(s==='todos'?'TODOS':s.toUpperCase())+' ('+S.pedidos.filter(function(p){return s==='todos'||statusPedido(p)===s}).length+')</button>';
+  }).join('');
+}
+
+function atualizarFiltroBtn(){
+  var btn=$('pedFiltroBtn');
+  if(!btn)return;
+  var count=0;
+  if(buscaPed&&buscaPed.trim())count++;
+  if(filtroDataDe)count++;
+  if(filtroDataAte)count++;
+  btn.textContent=count>0?'🎛️ FILTRAR ('+count+')':'🎛️ FILTRAR';
+}
+
+function toggleFiltroPedidos(){
+  var p=$('pedFiltroPanel');
+  if(!p)return;
+  p.style.display=(p.style.display==='none'||p.style.display==='')?'block':'none';
+}
+
+function limparFiltrosPed(){
+  buscaPed='';
+  filtroDataDe='';
+  filtroDataAte='';
+  var bi=$('pedBuscaInput');if(bi)bi.value='';
+  var dd=$('pedDataDe');if(dd)dd.value='';
+  var da=$('pedDataAte');if(da)da.value='';
+  atualizarFiltroBtn();
+  renderPedLista();
+}
+
+function renderPedLista(){
+  var box=$('pedLista');
+  if(!box)return;
+  var b=(buscaPed||'').toLowerCase();
+  var lista=S.pedidos.filter(function(p){
+    if(filtroPed!=='todos'&&statusPedido(p)!==filtroPed)return false;
+    if(b){
+      var c=cliente(p.clienteId);
+      if(!(c?c.nome:'').toLowerCase().includes(b))return false;
+    }
+    return naData(p,filtroDataDe,filtroDataAte);
+  });
+  lista.sort(function(a,b2){return b2.criadoEm.localeCompare(a.criadoEm)});
+  var totalFiltro=lista.reduce(function(a,p){return a+totalPedido(p)},0);
+  var count=$('pedCount');
+  if(count)count.innerHTML=lista.length+' PEDIDO(S) • TOTAL '+din(totalFiltro);
+  var h='';
+  if(!lista.length){
+    h='<div class="vazio">NENHUM PEDIDO AQUI. USE OS FILTROS OU TOQUE EM ➕ NOVO PEDIDO.</div>';
+  }
+  lista.forEach(function(p){
+    var c=cliente(p.clienteId);
+    h+='<div class="card"><div class="linha"><h3>'+(c?c.nome:'CLIENTE REMOVIDO')+'</h3><span class="badge '+ST[statusPedido(p)][1]+'">'+ST[statusPedido(p)][0]+'</span>'+badgePagamento(p)+'</div><div class="sub">NUMERO PEDIDO '+String(p.numero||'').padStart(2,'0')+' • '+dt(p.criadoEm)+'</div><div class="linha" style="margin-top:8px"><span class="total" style="margin:0">'+din(totalPedido(p))+'</span><span><button class="btn btn-claro" style="min-height:40px;padding:8px 10px;font-size:12px" onclick="verPedido(\''+p.id+'\')">VER</button><button class="btn btn-azul" style="min-height:40px;padding:8px 10px;font-size:12px" onclick="imprimirPedido(\''+p.id+'\')">🖨️</button><button class="btn btn-cor" style="min-height:40px;padding:8px 10px;font-size:12px" onclick="compartilharPedido(\''+p.id+'\')">📲</button></span></div></div>';
+  });
+  box.innerHTML=h;
+}
 function novoPedido(){pedEditId=null;pedDados=null;$('mpTitulo').textContent='NOVO PEDIDO';$('pedObs').value='';$('pedItens').innerHTML='';addItemRow();preencherCliente('');abrir('mPedido')}
 function editarPedido(id){const p=S.pedidos.find(x=>x.id===id);if(!p)return;pedEditId=id;$('mpTitulo').textContent='EDITAR PEDIDO';$('pedObs').value=p.obs||'';$('pedItens').innerHTML='';p.itens.forEach(i=>addItemRow(i.qtd,i.descricao,i.unidade,i.preco));preencherCliente(p.clienteId);abrir('mPedido');calcTotal()}
 function addItemRow(qtd,desc,un,preco){const seq=seqItens++;const d=document.createElement('div');d.className='item-row';d.dataset.prod='';d.innerHTML=`<div class="item-r1"><input type="number" class="iq" value="${qtd||''}" placeholder="0" oninput="calcTotal()"><select class="iun" onchange="mudarUnidade(this)">${UNIDADES.map(u=>`<option value="${u}">${unLabel(u)}</option>`).join('')}</select><input type="text" id="idc_${seq}" class="idc" value="${desc||''}" placeholder="DESCRIÇÃO" oninput="buscarProdSug(${seq})"><button class="btn-mic" style="width:40px;height:40px;font-size:16px" onclick="vozCampo('idc_${seq}')">🎤</button><button class="btn-x" onclick="this.closest('.item-row').remove();calcTotal()">✕</button></div><div class="item-r2"><input type="text" class="ip" inputmode="decimal" value="${preco?moedaInput(preco):''}" placeholder="PREÇO" onfocus="campoPrecoAtivo=this" oninput="mascaraMoeda(this);calcTotal()"><input type="text" class="itot" readonly value="R$ 0,00"></div><div class="prod-sug" id="prodSug_${seq}"></div>`;if(un)d.querySelector('.iun').value=un;$('pedItens').appendChild(d);calcTotal()}
