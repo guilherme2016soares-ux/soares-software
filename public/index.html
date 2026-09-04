@@ -429,7 +429,57 @@ async function compartilharPedido(id){const p=S.pedidos.find(x=>x.id===id);if(!p
 function verPedido(id){const p=S.pedidos.find(x=>x.id===id);if(!p)return;const c=cliente(p.clienteId);let h=`<div class="modal-head"><h2>${c?c.nome:'CLIENTE'} #${p.numero||''}</h2><button class="btn-x" onclick="fechar('mDetalhe')">✕</button></div><div class="linha" style="margin:2px 0 8px"><span class="badge ${ST[statusPedido(p)][1]}">${ST[statusPedido(p)][0]}</span><span class="sub">${dt(p.criadoEm)}</span></div>${p.entreguePor?`<div class="sub" style="color:var(--verde);margin-bottom:8px">✅ ENTREGUE POR: ${p.entreguePor}</div>`:''}${(c&&(c.endereco||c.bairro))?`<div style="padding:10px;background:var(--badgeBg);border:1px solid var(--borda);border-radius:12px"><div style="font-weight:900;font-size:15px;color:var(--texto)">📍 ${c.endereco||'SEM ENDEREÇO'}</div>${c.bairro?`<div style="font-weight:700;font-size:13px;color:var(--cor);margin-top:2px">🗺️ ${c.bairro}</div>`:''}${c.telefone?`<div class="sub" style="margin-top:2px">📞 ${c.telefone}</div>`:''}</div>`:''}<div style="margin-top:12px"><div class="sub" style="margin-bottom:4px;font-weight:800">📦 ITENS DO PEDIDO</div>${p.itens.map(i=>`<div class="item-ent"><span class="desc">${itemTxt(i)}</span><span class="sub">${din(i.qtd*i.preco)}</span></div>`).join('')}</div>${p.obs?`<label>OBSERVAÇÕES</label><div class="sub">${p.obs}</div>`:''}<div class="linha" style="margin-top:10px"><span class="sub" style="font-size:12px;color:var(--texto2)">VALOR: ${din(totalPedido(p))}</span></div><div class="acoes"><button class="btn btn-azul" onclick="imprimirPedido('${p.id}')">🖨️ IMPRIMIR</button><button class="btn btn-cor" onclick="compartilharPedido('${p.id}')">📲 COMPARTILHAR PDF</button><button class="btn btn-claro" onclick="editarPedido('${p.id}');fechar('mDetalhe')">EDITAR</button>${podeExcluir()?`<button class="btn" style="background:var(--badgeVermelho);color:var(--vermelho)" onclick="excluirPedido('${p.id}')">EXCLUIR</button>`:''}</div>`;$('mDetalheCorpo').innerHTML=h;abrir('mDetalhe')}
 function excluirPedido(id){soMaster(async()=>{if(!confirm('EXCLUIR ESTE PEDIDO?'))return;const ok=await excluirRegistro('pedidos',id);if(!ok)return;fechar('mDetalhe');renderAll();toast('PEDIDO EXCLUÍDO')})}
 function renderFinanceiro(){if(!usuarioLogado)return;const atras=atrasados();let h=`<h3 style="margin:10px 0 6px;color:var(--texto)">⏰ CLIENTES DEVENDO HÁ MAIS DE 30 DIAS (SEM NENHUM PAGAMENTO)</h3>`;if(!atras.length)h+=`<div class="vazio">NENHUM CLIENTE NESTA SITUAÇÃO. 🎉</div>`;atras.forEach(a=>{const ini=(a.c.nome||'?').trim().charAt(0).toUpperCase();h+=`<div class="sug" onclick="verConta('${a.c.id}')"><div class="foto" style="background:var(--vermelho)">${ini}</div><div class="info"><div class="n">${a.c.nome}</div><div class="d">⚠️ ${a.dias} DIA(S) SEM NENHUM PAGAMENTO • DEVE ${din(a.v)}</div></div><div class="seta">›</div></div>`});$('view-financeiro').innerHTML=h}
-function renderEntregas(){let h=`<div class="toolbar"><label style="margin:0">SEU NOME (ENTREGADOR)</label><div class="campo-voz" style="flex:1"><input type="text" id="entNome" placeholder="DIGITE SEU NOME..." value="${entregador}" oninput="entregador=this.value;localStorage.setItem('entregador',entregador)"><button class="btn-mic" onclick="vozCampo('entNome')">🎤</button></div></div>`;h+=`<div class="chips">${['pendente','parcial','entregue'].map(s=>`<button class="${filtroEnt===s?'ativo':''}" onclick="filtroEnt='${s}';renderEntregas()">${s.toUpperCase()} (${S.pedidos.filter(p=>statusPedido(p)===s).length})</button>`).join('')}</div>`;let lista=S.pedidos.filter(p=>statusPedido(p)===filtroEnt).sort((a,b)=>b.criadoEm.localeCompare(a.criadoEm));if(!lista.length)h+=`<div class="vazio">NENHUM PEDIDO ${filtroEnt==='pendente'?'COM ENTREGA PENDENTE':filtroEnt==='parcial'?'COM ENTREGA PARCIAL':'ENTREGUE'}.</div>`;lista.forEach(p=>{const c=cliente(p.clienteId);h+=`<div class="card"><div class="linha"><h3>${c?c.nome:'SEM CLIENTE'}</h3><span class="badge ${ST[statusPedido(p)][1]}">${ST[statusPedido(p)][0]}</span></div>${p.entreguePor?`<div class="sub" style="color:var(--verde)">✅ ENTREGUE POR: ${p.entreguePor}</div>`:''}${(c&&(c.endereco||c.bairro))?`<div style="margin-top:8px;padding:10px;background:var(--badgeBg);border:1px solid var(--borda);border-radius:12px"><div style="font-weight:900;font-size:15px;color:var(--texto)">📍 ${c.endereco||'SEM ENDEREÇO'}</div>${c.bairro?`<div style="font-weight:700;font-size:13px;color:var(--cor);margin-top:2px">🗺️ ${c.bairro}</div>`:''}${c.telefone?`<div class="sub" style="margin-top:2px">📞 ${c.telefone}</div>`:''}</div>`:''}<div style="margin-top:10px"><div class="sub" style="margin-bottom:4px;font-weight:800">📦 ITENS PARA ENTREGAR</div>${p.itens.map(i=>`<div class="item-ent"><span class="desc">${itemTxt(i)}</span></div>`).join('')}</div><div class="linha" style="margin-top:10px"><span class="sub" style="font-size:12px;color:var(--texto2)">VALOR: ${din(totalPedido(p))}</span><span><button class="btn btn-azul" style="min-height:42px;padding:8px 10px;font-size:12px" onclick="verPedido('${p.id}')">VER PEDIDO</button>${statusPedido(p)!=='entregue'?(pode('dar_baixa')?`<button class="btn btn-cor" style="min-height:42px;padding:8px 10px;font-size:12px" onclick="abrirEntrega('${p.id}')">MARCAR ENTREGA</button>`:''):`<button class="btn" style="min-height:42px;padding:8px 10px;font-size:12px;background:var(--badgeAmarelo);color:var(--amarelo)" onclick="estornarEntrega('${p.id}')">↩️ ESTORNAR</button>`}</span></div><div class="acoes"><button class="btn btn-claro" onclick="imprimirPedido('${p.id}')">🖨️ IMPRIMIR</button><button class="btn btn-cor" onclick="compartilharPedido('${p.id}')">📲 COMPARTILHAR PDF</button></div></div>`});$('view-entregas').innerHTML=h}
+function renderEntregas(){
+  if(typeof window.entBusca==='undefined')window.entBusca='';
+  var view=$('view-entregas');
+  if(!$('entBuscaInput')){
+    view.innerHTML='<div class="toolbar"><div class="busca-disc" style="flex:1;max-width:100%"><input type="text" id="entBuscaInput" placeholder="🔍 PROCURAR ENTREGA POR NOME DO CLIENTE..." value="'+window.entBusca+'" oninput="window.entBusca=this.value;renderEntLista()"></div></div><div class="chips" id="entChips"></div><div id="entLista"></div>';
+  }
+  var chips=$('entChips');
+  if(chips)chips.innerHTML=['pendente','parcial','entregue'].map(function(s){return '<button class="'+(filtroEnt===s?'ativo':'')+'" onclick="filtroEnt=\''+s+'\';renderEntregas()">'+s.toUpperCase()+' ('+S.pedidos.filter(function(p){return statusPedido(p)===s}).length+')</button>'}).join('');
+  renderEntLista();
+}
+
+function renderEntLista(){
+  var box=$('entLista');
+  if(!box)return;
+  var h='';
+  var lista=S.pedidos.filter(function(p){
+    if(statusPedido(p)!==filtroEnt)return false;
+    if(!window.entBusca.trim())return true;
+    var c=cliente(p.clienteId);
+    return (c?c.nome:'').toLowerCase().includes(window.entBusca.trim().toLowerCase());
+  }).sort(function(a,b){return b.criadoEm.localeCompare(a.criadoEm)});
+  if(!lista.length){
+    h='<div class="vazio">NENHUM PEDIDO '+(filtroEnt==='pendente'?'COM ENTREGA PENDENTE':filtroEnt==='parcial'?'COM ENTREGA PARCIAL':'ENTREGUE')+(window.entBusca.trim()?' COM ESTE NOME':'')+'.</div>';
+  }
+  lista.forEach(function(p){
+    var c=cliente(p.clienteId);
+    var st=statusPedido(p);
+    h+='<div class="card">';
+    h+='<div class="linha" style="cursor:pointer" onclick="var d=document.getElementById(\'entDet_'+p.id+'\');var b=document.getElementById(\'entBtn_'+p.id+'\');if(d.style.display==\'none\'){d.style.display=\'block\';b.textContent=\'▲ FECHAR\'}else{d.style.display=\'none\';b.textContent=\'▼ VER\'}">';
+    h+='<div style="display:flex;align-items:center;gap:8px"><h3 style="margin:0">'+(c?c.nome:'SEM CLIENTE')+'</h3><span class="badge '+ST[st][1]+'">'+ST[st][0]+'</span></div>';
+    h+='<div style="display:flex;align-items:center;gap:8px"><span class="sub" style="font-size:14px;font-weight:800;color:var(--cor)">'+din(totalPedido(p))+'</span><button class="btn btn-claro" id="entBtn_'+p.id+'" style="min-height:36px;padding:6px 12px;font-size:12px" onclick="event.stopPropagation();var d=document.getElementById(\'entDet_'+p.id+'\');var b=document.getElementById(\'entBtn_'+p.id+'\');if(d.style.display==\'none\'){d.style.display=\'block\';b.textContent=\'▲ FECHAR\'}else{d.style.display=\'none\';b.textContent=\'▼ VER\'}">▼ VER</button></div>';
+    h+='</div>';
+    h+='<div id="entDet_'+p.id+'" style="display:none;margin-top:10px">';
+    if(p.entreguePor)h+='<div class="sub" style="color:var(--verde);margin-bottom:8px">✅ ENTREGUE POR: '+p.entreguePor+'</div>';
+    if(c&&(c.endereco||c.bairro))h+='<div style="padding:10px;background:var(--badgeBg);border:1px solid var(--borda);border-radius:12px"><div style="font-weight:900;font-size:15px;color:var(--texto)">📍 '+(c.endereco||'SEM ENDEREÇO')+'</div>'+(c.bairro?'<div style="font-weight:700;font-size:13px;color:var(--cor);margin-top:2px">🗺️ '+c.bairro+'</div>':'')+(c.telefone?'<div class="sub" style="margin-top:2px">📞 '+c.telefone+'</div>':'')+'</div>';
+    h+='<div style="margin-top:10px"><div class="sub" style="margin-bottom:4px;font-weight:800">📦 ITENS PARA ENTREGAR</div>';
+    h+=p.itens.map(function(i){return '<div class="item-ent"><span class="desc">'+itemTxt(i)+'</span></div>'}).join('');
+    h+='</div>';
+    h+='<div class="linha" style="margin-top:10px"><span></span><span style="display:flex;gap:6px;flex-wrap:wrap">';
+    h+='<button class="btn btn-azul" style="min-height:42px;padding:8px 10px;font-size:12px" onclick="verPedido(\''+p.id+'\')">VER PEDIDO</button>';
+    if(st!=='entregue'){
+      if(pode('dar_baixa'))h+='<button class="btn btn-cor" style="min-height:42px;padding:8px 10px;font-size:12px" onclick="abrirEntrega(\''+p.id+'\')">MARCAR ENTREGA</button>';
+    }else{
+      h+='<button class="btn" style="min-height:42px;padding:8px 10px;font-size:12px;background:var(--badgeAmarelo);color:var(--amarelo)" onclick="estornarEntrega(\''+p.id+'\')">↩️ ESTORNAR</button>';
+    }
+    h+='</span></div>';
+    h+='<div class="acoes"><button class="btn btn-claro" onclick="imprimirPedido(\''+p.id+'\')">🖨️ IMPRIMIR</button><button class="btn btn-cor" onclick="compartilharPedido(\''+p.id+'\')">📲 COMPARTILHAR PDF</button></div>';
+    h+='</div></div>';
+  });
+  box.innerHTML=h;
+}
 function renderEntregadores(){let h='<div class="toolbar"><button class="btn btn-cor" style="flex:1" onclick="novoEntregador()">➕ CADASTRAR ENTREGADOR</button></div>';if(!S.entregadores.length){h+='<div class="vazio">NENHUM ENTREGADOR CADASTRADO. TOQUE EM + CADASTRAR ENTREGADOR.</div>';$('view-entregadores').innerHTML=h;return}S.entregadores.slice().sort((a,b)=>a.nome.localeCompare(b.nome)).forEach(e=>{const feitas=S.pedidos.filter(p=>p.entreguePor===e.nome).length;h+='<div class="card"><div class="linha"><h3>'+e.nome+'</h3></div><div class="sub">'+feitas+' ENTREGA(S) FEITA(S)</div><div class="acoes" style="margin-top:8px"><button class="btn btn-claro" style="flex:1;min-height:42px;padding:7px" onclick="editarEntregador(\''+e.id+'\')">EDITAR</button><button class="btn" style="flex:1;min-height:42px;padding:7px;background:var(--badgeVermelho);color:var(--vermelho)" onclick="excluirEntregador(\''+e.id+'\')">EXCLUIR</button></div></div>'});$('view-entregadores').innerHTML=h}
 function novoEntregador(){entregadorEditId=null;$('meTitulo').textContent='NOVO ENTREGADOR';$('eNome').value='';abrir('mEntregador')}
 function editarEntregador(id){const e=S.entregadores.find(x=>x.id===id);if(!e)return;entregadorEditId=id;$('meTitulo').textContent='EDITAR ENTREGADOR';$('eNome').value=e.nome;abrir('mEntregador')}
