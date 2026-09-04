@@ -9,7 +9,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-const COLECOES_VALIDAS = ['clientes', 'pedidos', 'usuarios', 'produtos', 'entregadores', 'mensagens', 'solicitacoes'];
+const COLECOES_VALIDAS = ['clientes', 'pedidos', 'usuarios', 'produtos', 'entregadores', 'mensagens', 'solicitacoes', 'orcamentos'];
 
 async function init() {
   await pool.query(`CREATE TABLE IF NOT EXISTS dados (
@@ -17,7 +17,7 @@ async function init() {
     json TEXT NOT NULL
   )`);
   await pool.query(`INSERT INTO dados (id, json)
-    VALUES (1, '{"clientes":[],"pedidos":[],"usuarios":[],"produtos":[],"entregadores":[],"mensagens":[],"solicitacoes":[]}')
+    VALUES (1, '{"clientes":[],"pedidos":[],"usuarios":[],"produtos":[],"entregadores":[],"mensagens":[],"solicitacoes":[],"orcamentos":[]}')
     ON CONFLICT (id) DO NOTHING`);
 }
 
