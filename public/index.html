@@ -77,8 +77,8 @@ h1,h2,h3{letter-spacing:-.01em}
 .hbtn svg{display:block}
 .sino-badge{position:absolute;top:-5px;right:-5px;background:var(--vermelho);color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--card)}
 
-.content{max-width:1180px;margin:0 auto;padding:24px 24px 64px}
-@media(min-width:1400px){.content{max-width:1280px}}
+.content{max-width:1520px;margin:0 auto;padding:24px 24px 64px}
+@media(min-width:1400px){.content{max-width:2100px;padding:26px 44px 64px}}
 .view{display:none}
 .view.ativa{display:block;animation:fade .16s ease}
 @keyframes fade{from{opacity:0}to{opacity:1}}
@@ -128,7 +128,7 @@ h1,h2,h3{letter-spacing:-.01em}
 .kpi .krot{font-size:11px;color:var(--texto2);font-weight:700;margin-top:2px}
 .kpi .kdelta{font-size:12px;font-weight:700;margin-top:8px}
 .dash2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:860px){.dash2{grid-template-columns:1fr}}
+@media(max-width:1080px){.dash2{grid-template-columns:1fr}}
 .chart{height:170px;display:flex;align-items:flex-end;gap:8px;padding:10px 4px 0}
 .chart .bar{flex:1;background:linear-gradient(180deg,var(--cor),var(--cor2));border-radius:6px 6px 0 0;min-height:6px;position:relative;opacity:.92}
 .chart .bar span{position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-size:10px;color:var(--texto2);font-weight:600}
@@ -337,7 +337,7 @@ let filtroPed='todos',buscaPed='',filtroDataDe='',filtroDataAte='',filtroEnt='pe
 let pedEditId=null,pedClienteId='',clienteEditId=null,produtoEditId=null,entregaPedId=null,usuarioEditId=null,pagPedidoId=null,pedDados=null,contaAtivaId='',orcEditId=null,catalogoAlvo='pedItens';
 let perfilSel='atendente',formaSel='pix',navHist=[],campoPrecoAtivo=null,calcExprStr='0',seqItens=0,entregadorEditId=null,uPermsSel=permsPadrao('atendente'),msgDestSel=[];
 let pagCli=1,porPagCli=8,filtroCliStatus='todos',selCli=new Set(),pagUsu=1,porPagUsu=8,buscaUsu='',filtroUsuPerfil='todos',selUsu=new Set(),pagProd=1,porPagProd=8,buscaProd='',pagConta=1,porPagConta=8,filtroConta='todos',selConta=new Set();
-let receberSelIds=new Set(),contaTab='apagar',solic=new Set(),solicDet={},clienteLogado=null,catBuscaCli='',euPid=null,euOrigem='cliente',contaCliExp=new Set(),entregaCliExp=new Set(),_contaCliSig='',_catCliSig='';
+let receberSelIds=new Set(),contaTab='apagar',solic=new Set(),solicDet={},clienteLogado=null,catBuscaCli='',euPid=null,euOrigem='cliente',contaCliExp=new Set(),entregaCliExp=new Set(),entregaSisExp=new Set(),_contaCliSig='',_catCliSig='';
 const TABS=[['inicio','🏠','Início'],['pedidos','📋','Pedidos'],['orcamentos','🧾','Orçamentos'],['clientes','👥','Clientes'],['produtos','📦','Produtos'],['contas','💰','Contas'],['financeiro','📊','Financeiro'],['entregas','🚚','Entregas'],['entregadores','🧑','Equipe'],['historico','📜','Histórico'],['solicitacoes','📥','Solicitações'],['usuarios','🛡️','Usuários'],['config','⚙️','Ajustes']];
 const _svg=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const ICONS={
@@ -462,7 +462,9 @@ function abrirContaCliente(){
   box.innerHTML=h;
   abrir('mContaCliente');
 }function detalheContaCliHTML(p){const ehP=ehPrazo(p),pago=totalPagoPedido(p),saldo=saldoPedido(p),st=statusPedido(p);let d='<div style="background:var(--card2);border:1px solid var(--borda);border-radius:10px;padding:8px"><div class="sub" style="margin-bottom:4px;font-weight:800">📦 Itens do pedido</div>';d+=p.itens.map(function(i){var ja=+(i.entregue||0),falta=faltaItem(i),ex=ja>0?'<span class="sub"> — entregue '+qtdFmt(ja)+(falta>0?' • falta '+qtdFmt(falta):'')+'</span>':'';return '<div class="item-ent"><span class="desc">'+itemTxt(i)+ex+'</span><span class="sub">'+din(i.qtd*i.preco)+'</span></div>'}).join('');d+='<div class="linha" style="margin-top:8px"><span class="sub">Total: <b style="color:var(--texto)">'+din(totalPedido(p))+'</b></span><span class="badge '+ST[st][1]+'">'+ST[st][0]+'</span></div>';if(ehP){d+='<div class="sub" style="margin-top:4px">Já pago: <b style="color:var(--verde)">'+din(pago)+'</b>'+(saldo>0?' • falta: <b style="color:var(--vermelho)">'+din(saldo)+'</b>':'')+'</div>'}else{d+='<div class="sub" style="margin-top:4px;color:var(--verde)">Pago à vista</div>'}d+='<button type="button" class="btn btn-claro" style="min-height:34px;padding:5px 12px;font-size:12px;margin-top:8px" onclick="verEntregaContaCli(\''+p.id+'\')">'+(entregaCliExp.has(p.id)?'🚚 Entrega ▲':'🚚 Entrega ▼')+'</button>';d+='<div id="entregaCli-'+p.id+'" style="display:'+(entregaCliExp.has(p.id)?'block':'none')+';margin-top:6px">'+(histEntregasHTML(p)||'<div class="sub">Nenhuma entrega registrada ainda.</div>')+'</div>';d+='</div>';d+='<div class="acoes" style="margin-top:8px"><button class="btn btn-azul" onclick="imprimirPedido(\''+p.id+'\')">🖨️ Imprimir</button><button class="btn btn-cor" onclick="compartilharPedido(\''+p.id+'\')">📲 Compartilhar</button></div>';return d}
-function verEntregaContaCli(pid){const el=document.getElementById('entregaCli-'+pid);if(!el)return;const abrindo=el.style.display==='none';el.style.display=abrindo?'block':'none';if(abrindo)entregaCliExp.add(pid);else entregaCliExp.delete(pid);const btn=el.previousElementSibling;if(btn)btn.textContent=abrindo?'🚚 Entrega ▲':'🚚 Entrega ▼'}
+function _toggleEntBox(id,key,setRef,base){const el=document.getElementById(id);if(!el)return;const ab=el.style.display==='none';el.style.display=ab?'block':'none';if(ab)setRef.add(key);else setRef.delete(key);const btn=el.previousElementSibling;if(btn)btn.textContent=base+(ab?' ▲':' ▼')}
+function verEntregaContaCli(pid){_toggleEntBox('entregaCli-'+pid,pid,entregaCliExp,'🚚 Entrega')}
+function verEntregaSis(pid){_toggleEntBox('entregaSis-'+pid,pid,entregaSisExp,'🚚 Entregas')}
 function verDetalheContaCliente(pid){const el=document.getElementById('detalheCli-'+pid);if(!el)return;const abrindo=el.style.display==='none';el.style.display=abrindo?'block':'none';if(abrindo)contaCliExp.add(pid);else contaCliExp.delete(pid);const btn=el.parentElement.querySelector('button.btn-claro');if(btn)btn.textContent=abrindo?'Fechar':'Ver'}
 function pedirProdutoCliente(pid){const p=produto(pid);if(!p)return;euPid=pid;euOrigem='cliente';const opas=formasProduto(p);if(!opas.length){toast('Produto sem unidade de venda');return}$('euTitulo').textContent=p.nome;$('euProduto').textContent=p.nome;$('euUnidade').innerHTML=opas.map((o,i)=>`<option value="${i}">${unLabel(o.un)}${clienteLogado&&clienteLogado.catPreco?' • '+din(o.preco):''}</option>`).join('');$('euQtd').value=1;const bt=document.querySelector('#mEscolherUn .acoes .btn-cor');if(bt)bt.textContent='➕ Adicionar ao carrinho';euCalc();abrir('mEscolherUn')}
 function euCalc(){const p=produto(euPid);if(!p)return;const opas=formasProduto(p),idx=+$('euUnidade').value||0,o=opas[idx];if(!o)return;const qtd=parseFloat(String($('euQtd').value).replace(',','.'))||0;const preco=(euOrigem==='vendedor'||(clienteLogado&&clienteLogado.catPreco))?(+o.preco||0):0;$('euTotal').textContent=preco>0?din(qtd*preco):'Valor informado pelo vendedor'}
@@ -985,7 +987,8 @@ function renderEntLista(){
     h+='<div style="display:flex;align-items:center;gap:8px"><span class="sub" style="font-size:14px;font-weight:800;color:var(--cor)">'+din(totalPedido(p))+'</span><button class="btn btn-claro" id="entBtn_'+p.id+'" style="min-height:36px;padding:6px 12px;font-size:12px" onclick="event.stopPropagation();toggleEntCard(\''+p.id+'\')">'+(aberto?'▲ Fechar':'▼ Ver')+'</button></div>';
     h+='</div>';
     h+='<div id="entDet_'+p.id+'" style="'+(aberto?'display:block':'display:none')+';margin-top:10px">';
-    h+=histEntregasHTML(p);
+    h+='<button type="button" class="btn btn-claro" style="min-height:34px;padding:5px 12px;font-size:12px" onclick="verEntregaSis(\''+p.id+'\')">'+(entregaSisExp.has(p.id)?'🚚 Entregas ▲':'🚚 Entregas ▼')+'</button>';
+    h+='<div id="entregaSis-'+p.id+'" style="display:'+(entregaSisExp.has(p.id)?'block':'none')+';margin-top:6px">'+(histEntregasHTML(p)||'<div class="sub">Nenhuma entrega registrada ainda.</div>')+'</div>';
     if(c&&(c.endereco||c.bairro))h+='<div style="padding:10px;background:var(--badgeBg);border:1px solid var(--borda);border-radius:12px"><div style="font-weight:900;font-size:15px;color:var(--texto)">📍 '+(c.endereco||'Sem endereço')+'</div>'+(c.bairro?'<div style="font-weight:700;font-size:13px;color:var(--cor);margin-top:2px">🗺️ '+c.bairro+'</div>':'')+(c.telefone?'<div class="sub" style="margin-top:2px">📞 '+c.telefone+'</div>':'')+'</div>';
     h+='<div style="margin-top:10px"><div class="sub" style="margin-bottom:4px;font-weight:800">📦 Itens para entregar</div>';
     h+=p.itens.map(function(i){var ja=+(i.entregue||0),falta=faltaItem(i);var ex=ja>0?'<span class="sub"> — entregue '+qtdFmt(ja)+(falta>0?' • falta '+qtdFmt(falta):'')+'</span>':'';return '<div class="item-ent"><span class="desc">'+itemTxt(i)+ex+'</span></div>'}).join('');
